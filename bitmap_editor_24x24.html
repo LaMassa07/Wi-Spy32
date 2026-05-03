@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitmap Editor 24x24</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .grid-container {
+            display: inline-grid;
+            grid-template-columns: repeat(24, 20px);
+            gap: 1px;
+            background: #ddd;
+            padding: 1px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+        .pixel {
+            width: 20px;
+            height: 20px;
+            background: white;
+            transition: background-color 0.1s;
+        }
+
+        .pixel.active {
+            background: #000;
+        }
+
+        .pixel:hover {
+            opacity: 0.7;
+        }
+
+        .preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .preview-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        #previewCanvas {
+            border: 2px solid #ccc;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-clear {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #c82333;
+        }
+
+        .btn-invert {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-invert:hover {
+            background: #5a6268;
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #218838;
+        }
+
+        .btn-load {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-load:hover {
+            background: #0056b3;
+        }
+
+        .code-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .code-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+
+        .code-box .keyword {
+            color: #569cd6;
+        }
+
+        .code-box .type {
+            color: #4ec9b0;
+        }
+
+        .code-box .number {
+            color: #b5cea8;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            justify-content: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            pointer-events: none;
+            font-weight: 600;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .input-section {
+            margin-top: 15px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-container {
+                grid-template-columns: repeat(24, 15px);
+            }
+
+            .pixel {
+                width: 15px;
+                height: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Bitmap Editor 24×24</h1>
+        <p class="subtitle">Clicca sui quadratini per disegnare • Trascina per disegnare velocemente</p>
+
+        <div class="main-content">
+            <div class="editor-section">
+                <div class="grid-container" id="grid"></div>
+                
+                <div class="preview">
+                    <span class="preview-label">Preview 1:1</span>
+                    <canvas id="previewCanvas" width="24" height="24"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-clear" onclick="clearGrid()">🗑️ Cancella</button>
+                    <button class="btn-invert" onclick="invertGrid()">🔄 Inverti</button>
+                    <button class="btn-copy" onclick="copyCode()">📋 Copia Codice</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="pixelCount">0</div>
+                        <div class="stat-label">Pixel Attivi</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">72</div>
+                        <div class="stat-label">Bytes</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <div class="code-header">
+                    <span class="code-title">💻 Codice PROGMEM</span>
+                </div>
+                <div class="code-box" id="codeOutput"></div>
+
+                <div class="input-section">
+                    <label class="input-label">📥 Carica un array esistente:</label>
+                    <textarea id="arrayInput" placeholder="Incolla qui il tuo array (es: 0x00, 0x00, 0x7E, ...)"></textarea>
+                    <button class="btn-load" onclick="loadArray()" style="margin-top: 10px; width: 100%;">⬆️ Carica Array</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✓ Codice copiato!</div>
+
+    <script>
+        const GRID_SIZE = 24;
+        const BYTES_COUNT = 72; // 24x24 / 8
+        let pixels = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(false));
+        let isDrawing = false;
+        let drawMode = true; // true = paint, false = erase
+
+        // Crea la griglia
+        const gridContainer = document.getElementById('grid');
+        for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                pixel.dataset.x = x;
+                pixel.dataset.y = y;
+                
+                pixel.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    isDrawing = true;
+                    drawMode = !pixels[y][x];
+                    togglePixel(x, y, drawMode);
+                });
+                
+                pixel.addEventListener('mouseenter', () => {
+                    if (isDrawing) {
+                        togglePixel(x, y, drawMode);
+                    }
+                });
+                
+                pixel.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    isDrawing = true;
+                    drawMode = !pixels[y][x];
+                    togglePixel(x, y, drawMode);
+                });
+                
+                pixel.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (element && element.classList.contains('pixel')) {
+                        const tx = parseInt(element.dataset.x);
+                        const ty = parseInt(element.dataset.y);
+                        togglePixel(tx, ty, drawMode);
+                    }
+                });
+                
+                gridContainer.appendChild(pixel);
+            }
+        }
+
+        document.addEventListener('mouseup', () => isDrawing = false);
+        document.addEventListener('touchend', () => isDrawing = false);
+
+        function togglePixel(x, y, state) {
+            pixels[y][x] = state;
+            updatePixelDisplay(x, y);
+            updateOutput();
+        }
+
+        function updatePixelDisplay(x, y) {
+            const index = y * GRID_SIZE + x;
+            const pixelEl = gridContainer.children[index];
+            pixelEl.classList.toggle('active', pixels[y][x]);
+        }
+
+        function clearGrid() {
+            pixels = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(false));
+            updateAllPixels();
+            updateOutput();
+        }
+
+        function invertGrid() {
+            pixels = pixels.map(row => row.map(p => !p));
+            updateAllPixels();
+            updateOutput();
+        }
+
+        function updateAllPixels() {
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    updatePixelDisplay(x, y);
+                }
+            }
+        }
+
+        function pixelsToBitmap() {
+            const data = new Array(BYTES_COUNT).fill(0);
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    if (pixels[y][x]) {
+                        const byteIndex = y * 3 + Math.floor(x / 8);
+                        const bitIndex = 7 - (x % 8);
+                        data[byteIndex] |= (1 << bitIndex);
+                    }
+                }
+            }
+            
+            return data;
+        }
+
+        function bitmapToPixels(data) {
+            const newPixels = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(false));
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    const byteIndex = y * 3 + Math.floor(x / 8);
+                    const bitIndex = 7 - (x % 8);
+                    newPixels[y][x] = ((data[byteIndex] >> bitIndex) & 1) === 1;
+                }
+            }
+            
+            return newPixels;
+        }
+
+        function updateOutput() {
+            const data = pixelsToBitmap();
+            
+            // Genera codice con syntax highlighting
+            let code = '<span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> WIFI_24[] <span class="keyword">PROGMEM</span> = {\n  ';
+            
+            for (let i = 0; i < data.length; i++) {
+                code += '<span class="number">0x' + data[i].toString(16).toUpperCase().padStart(2, '0') + '</span>';
+                if (i < data.length - 1) {
+                    code += ', ';
+                    if ((i + 1) % 12 === 0) code += '\n  ';
+                }
+            }
+            
+            code += '\n};';
+            document.getElementById('codeOutput').innerHTML = code;
+            
+            // Aggiorna preview
+            updatePreview(data);
+            
+            // Aggiorna contatore pixel
+            const activePixels = pixels.flat().filter(p => p).length;
+            document.getElementById('pixelCount').textContent = activePixels;
+        }
+
+        function updatePreview(data) {
+            const canvas = document.getElementById('previewCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 24, 24);
+            
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    ctx.fillStyle = pixels[y][x] ? '#000' : '#fff';
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            }
+        }
+
+        function copyCode() {
+            const data = pixelsToBitmap();
+            let code = 'const unsigned char WIFI_24[] PROGMEM = {\n  ';
+            
+            for (let i = 0; i < data.length; i++) {
+                code += '0x' + data[i].toString(16).toUpperCase().padStart(2, '0');
+                if (i < data.length - 1) {
+                    code += ', ';
+                    if ((i + 1) % 12 === 0) code += '\n  ';
+                }
+            }
+            
+            code += '\n};';
+            
+            navigator.clipboard.writeText(code).then(() => {
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function loadArray() {
+            const input = document.getElementById('arrayInput').value;
+            
+            // Estrai solo i valori esadecimali
+            const hexValues = input.match(/0x[0-9A-Fa-f]{2}/g);
+            
+            if (!hexValues || hexValues.length !== BYTES_COUNT) {
+                alert(`⚠️ Errore: l'array deve contenere esattamente ${BYTES_COUNT} byte.\nTrovati: ${hexValues ? hexValues.length : 0} byte.`);
+                return;
+            }
+            
+            const data = hexValues.map(hex => parseInt(hex, 16));
+            pixels = bitmapToPixels(data);
+            updateAllPixels();
+            updateOutput();
+            
+            // Pulisci l'input
+            document.getElementById('arrayInput').value = '';
+        }
+
+        // Inizializza
+        updateOutput();
+    </script>
+</body>
+</html>
