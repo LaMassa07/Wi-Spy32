@@ -1,13 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-//BUTTON PINS
+//I/O PINS
 #define BUTTON 14
+#define LED 4
 
 
 //SERIAL SETTINGS
 #define BAUDRATE 115200
-
 
 
 //SCREEN SETTINGS
@@ -17,7 +17,6 @@
 #define OLED_RESET -1 //-1 = share the esp32 one
 #define MAX_NAME_LENGHT 25 //for the shown ap
 #define MAX_RSSI_COLUMN 60
-
 
 
 //DIAGRAM SETTINGS
@@ -38,7 +37,6 @@ const char *password = "p4ssw0rd";
 //RSSI STATES
 #define SHOWRSSI 0
 #define SHOWINFO 1
-
 
 
 //BITMAPS
@@ -68,7 +66,5 @@ const unsigned char INFO[] PROGMEM = {
   0x00, 0x01, 0xE0, 0x00, 0x01, 0xE8, 0x00, 0x01, 0xF8, 0x00, 0x01, 0xF0, 
   0x00, 0x01, 0xE0, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
-
-
 
 #endif

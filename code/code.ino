@@ -28,13 +28,17 @@ int network_n = 0;
 int rssi = 0;
 
 unsigned long lastUpdate = 0;
+unsigned long lastUpdateAux = 0;
 const unsigned long interval = 500;
 int posX = 0;
 bool first = true;
 
+bool ledState = false;
+
 
 void setup() {
   pinMode(BUTTON, INPUT_PULLUP);
+  pinMode(LED, OUTPUT);
 
   if(!oled.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println("SSD1306 ALLOCATION FAILED!");
@@ -51,6 +55,7 @@ void loop() {
   switch(WiFiState){
     case APMODE: server.handleClient(); break;
     case STAMODE: 
+      digitalWrite(LED, LOW);
       switch(rssiState){
         case SHOWRSSI: showRSSI(); break;
         case SHOWINFO: showInfo(); break;
@@ -78,7 +83,7 @@ void showRSSI(){
     oled.setTextSize(1);
     oled.setCursor(108, 22);
     oled.print("dB");
-    oled.setCursor(8, 2);
+    oled.setCursor(4, 2);
     oled.println(wifiSSID.substring(0, 25));
 
     oled.drawLine(posX, Y0, posX, posY, SSD1306_WHITE);
@@ -127,6 +132,7 @@ void showInfo(){
     rssiState = SHOWRSSI;
     delay(200);
     oled.clearDisplay();
+    posX = 0;
   }
 }
 
@@ -283,6 +289,8 @@ void handleSave() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(wifiSSID.c_str(), wifiPASS.c_str());
 
+  while(WiFi.status() != WL_CONNECTED){}
+
   WiFiState = STAMODE;
 }
 
@@ -304,7 +312,14 @@ void configPortal(){
   oled.display();
 
   while(WiFi.softAPgetStationNum() == 0){
-    delay(10);
+    unsigned long currentMillisAux = millis();
+    if (currentMillisAux - lastUpdateAux >= interval) {
+      lastUpdateAux = currentMillisAux;
+
+      ledState = !ledState;
+      digitalWrite(LED, ledState);
+    }
+    yield();
   }
 
   oled.clearDisplay();
@@ -320,5 +335,6 @@ void configPortal(){
   server.on("/", handleRoot);
   server.on("/save", HTTP_POST, handleSave);
 
+  digitalWrite(LED, HIGH);
   server.begin();
 }
